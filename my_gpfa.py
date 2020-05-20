@@ -467,3 +467,95 @@ for i in avg_traj.keys():
 transBackground(ax1,3)
 ax1.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.show()
+
+# define X, each row of X is consists of 4 values (1 value for each dimension)
+# each column of X consists of 80 
+# X_dict[time pt][trial num , dim], time pt from 1:80, trial num from 1:1877, dim from 1:4
+
+X_dict = {}
+for t in range(len(times)):
+    X_dict[t] = np.empty([len(trajectories_all),4])
+    for i in range(len(trajectories_all)):
+        cur_traj = trajectories_all[i]
+        X_dict[t][i,:] = cur_traj[:,t]
+
+# define y, reaction time
+y = np.array(behav['RT'])
+
+# split X and y into training and testing sets
+
+from sklearn.model_selection import train_test_split
+
+y_train, y_test = train_test_split(y, test_size=0.33, random_state=42)
+
+X_train = {}
+X_test = {}
+
+for t in range(len(times)):
+    X_train[t], X_test[t] = train_test_split(X_dict[t], test_size=0.33, random_state=42)
+
+# fit a linear regression line for each trial via:
+# y = C * X, where y is reaction time, c is coefficient matrix, and X is data matrix
+
+from sklearn import linear_model
+from sklearn.metrics import mean_squared_error, r2_score
+
+# Create linear regression object
+regr = linear_model.LinearRegression()
+
+# Train and test the model using the training sets
+r_squared = []
+for t in range(len(times)):
+    fit = regr.fit(X_train[t], y_train)
+    predict = regr.predict(X_test[t])
+    r_squared.append(regr.score(X_test[t],y_test))
+
+f = plt.figure(figsize=(6,4))
+ax = f.add_subplot(1,1,1)
+ax.set_title('RT vs Neural State')
+ax.set_xlabel('Time (ms)')
+ax.set_ylabel('Regression R^2')
+ax.plot(times, r_squared)
+ax.axvline(400)
+plt.show()
+
+f = plt.figure(figsize=(6,4))
+ax = f.add_subplot(1,1,1)
+ax.set_title('RT vs Neural State')
+ax.set_xlabel('Time (ms)')
+ax.set_ylabel('Regression R^2')
+ax.plot(times, r_squared)
+ax.axvline(400)
+plt.show()
+
+# split X and y into training and testing sets
+
+from sklearn.model_selection import train_test_split
+
+y_train, y_test = train_test_split(y, test_size=0.33, random_state=42)
+
+X_train = {}
+X_test = {}
+
+for t in range(len(times)):
+    X_train[t], X_test[t] = train_test_split(X_dict[t], test_size=0.33, random_state=42)
+
+# classification
+
+from sklearn.linear_model import SGDClassifier
+
+# Train and test the model using the training sets
+acc = []
+for t in range(len(times)):
+    clf = SGDClassifier(loss="hinge", penalty="l2", tol=1e-5)
+    clf.fit(X_train[t], y_train)
+    acc.append(clf.score(X_test[t],y_test))
+
+f = plt.figure(figsize=(6,4))
+ax = f.add_subplot(1,1,1)
+ax.set_title('Choice Decoder')
+ax.set_xlabel('Time (ms)')
+ax.set_ylabel('Accuracy')
+ax.plot(times, acc)
+ax.axvline(400)
+plt.show()
